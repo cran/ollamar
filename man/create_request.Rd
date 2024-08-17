@@ -2,12 +2,14 @@
 % Please edit documentation in R/ollama.R
 \name{create_request}
 \alias{create_request}
-\title{Create a httr2 request object.}
+\title{Create a httr2 request object}
 \usage{
-create_request(endpoint)
+create_request(endpoint, host = NULL)
 }
 \arguments{
 \item{endpoint}{The endpoint to create the request}
+
+\item{host}{The base URL to use. Default is NULL, which uses http://127.0.0.1:11434}
 }
 \value{
 A httr2 request object.

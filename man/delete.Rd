@@ -2,23 +2,28 @@
 % Please edit documentation in R/ollama.R
 \name{delete}
 \alias{delete}
-\title{Delete a model}
+\title{Delete a model and its data}
 \usage{
-delete(model, endpoint = "/api/delete")
+delete(name, endpoint = "/api/delete", host = NULL)
 }
 \arguments{
-\item{model}{A character string of the model name such as "llama3".}
+\item{name}{A character string of the model name such as "llama3".}
 
 \item{endpoint}{The endpoint to delete the model. Default is "/api/delete".}
+
+\item{host}{The base URL to use. Default is NULL, which uses Ollama's default base URL.}
 }
 \value{
 A httr2 response object.
 }
 \description{
-Delete a model from your local machine that you downlaoded using the pull() function. To see which models are available, use the list_models() function.
+Delete a model from your local machine that you downloaded using the pull() function. To see which models are available, use the list_models() function.
 }
 \examples{
 \dontrun{
 delete("llama3")
 }
+}
+\references{
+\href{https://github.com/ollama/ollama/blob/main/docs/api.md#delete-a-model}{API documentation}
 }

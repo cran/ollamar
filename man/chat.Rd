@@ -2,14 +2,18 @@
 % Please edit documentation in R/ollama.R
 \name{chat}
 \alias{chat}
-\title{Chat with Ollama models}
+\title{Generate a chat completion with message history}
 \usage{
 chat(
   model,
   messages,
+  tools = list(),
   stream = FALSE,
-  output = c("resp", "jsonlist", "raw", "df"),
-  endpoint = "/api/chat"
+  keep_alive = "5m",
+  output = c("resp", "jsonlist", "raw", "df", "text", "req"),
+  endpoint = "/api/chat",
+  host = NULL,
+  ...
 )
 }
 \arguments{
@@ -17,36 +21,49 @@ chat(
 
 \item{messages}{A list with list of messages for the model (see examples below).}
 
+\item{tools}{Tools for the model to use if supported. Requires stream = FALSE. Default is an empty list.}
+
 \item{stream}{Enable response streaming. Default is FALSE.}
 
-\item{output}{The output format. Default is "resp". Other options are "jsonlist", "raw", "df".}
+\item{keep_alive}{The duration to keep the connection alive. Default is "5m".}
+
+\item{output}{The output format. Default is "resp". Other options are "jsonlist", "raw", "df", "text", "req" (httr2_request object).}
 
 \item{endpoint}{The endpoint to chat with the model. Default is "/api/chat".}
+
+\item{host}{The base URL to use. Default is NULL, which uses Ollama's default base URL.}
+
+\item{...}{Additional options to pass to the model.}
 }
 \value{
-A httr2 response object, json list, raw or data frame.
+A response in the format specified in the output parameter.
 }
 \description{
-Chat with Ollama models
+Generate a chat completion with message history
 }
 \examples{
 \dontshow{if (test_connection()$status_code == 200) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
 # one message
 messages <- list(
- list(role = "user", content = "How are you doing?")
+    list(role = "user", content = "How are you doing?")
 )
-chat("llama3", messages)
-chat("llama3", messages, stream = TRUE)
-chat("llama3", messages, stream = TRUE, output = "df")
+chat("llama3", messages) # returns response by default
+chat("llama3", messages, output = "text") # returns text/vector
+chat("llama3", messages, temperature = 2.8) # additional options
+chat("llama3", messages, stream = TRUE) # stream response
+chat("llama3", messages, output = "df", stream = TRUE) # stream and return dataframe
 
 # multiple messages
 messages <- list(
- list(role = "user", content = "Hello!"),
- list(role = "assistant", content = "Hi! How are you?"),
- list(role = "user", content = "Who is the prime minister of the uk?"),
- list(role = "assistant", content = "Rishi Sunak"),
- list(role = "user", content = "List all the previous messages.")
+    list(role = "user", content = "Hello!"),
+    list(role = "assistant", content = "Hi! How are you?"),
+    list(role = "user", content = "Who is the prime minister of the uk?"),
+    list(role = "assistant", content = "Rishi Sunak"),
+    list(role = "user", content = "List all the previous messages.")
 )
 chat("llama3", messages, stream = TRUE)
 \dontshow{\}) # examplesIf}
+}
+\references{
+\href{https://github.com/ollama/ollama/blob/main/docs/api.md#generate-a-chat-completion}{API documentation}
 }

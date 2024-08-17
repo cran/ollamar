@@ -2,30 +2,36 @@
 % Please edit documentation in R/ollama.R
 \name{list_models}
 \alias{list_models}
-\title{Get available local models}
+\title{List models that are available locally}
 \usage{
 list_models(
-  output = c("df", "resp", "jsonlist", "raw"),
-  endpoint = "/api/tags"
+  output = c("df", "resp", "jsonlist", "raw", "text"),
+  endpoint = "/api/tags",
+  host = NULL
 )
 }
 \arguments{
-\item{output}{The output format. Default is "df". Other options are "resp", "jsonlist", "raw".}
+\item{output}{The output format. Default is "df". Other options are "resp", "jsonlist", "raw", "text".}
 
 \item{endpoint}{The endpoint to get the models. Default is "/api/tags".}
+
+\item{host}{The base URL to use. Default is NULL, which uses Ollama's default base URL.}
 }
 \value{
-A httr2 response object, json list, raw or data frame. Default is "df".
+A response in the format specified in the output parameter.
 }
 \description{
-Get available local models
+List models that are available locally
 }
 \examples{
 \dontshow{if (test_connection()$status_code == 200) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
-list_models()  # returns dataframe/tibble by default
-list_models("df")
-list_models("resp")
+list_models() # returns dataframe
+list_models("df") # returns dataframe
+list_models("resp") # httr2 response object
 list_models("jsonlist")
 list_models("raw")
 \dontshow{\}) # examplesIf}
+}
+\references{
+\href{https://github.com/ollama/ollama/blob/main/docs/api.md#list-local-models}{API documentation}
 }

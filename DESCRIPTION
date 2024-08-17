@@ -1,24 +1,28 @@
 Package: ollamar
 Title: 'Ollama' Language Models
-Version: 1.1.1
-Authors@R: 
+Version: 1.2.0
+Authors@R: c( 
     person("Hause", "Lin", , "hauselin@gmail.com", role = c("aut", "cre", "cph"),
-           comment = c(ORCID = "0000-0003-4590-7039"))
+           comment = c(ORCID = "0000-0003-4590-7039")),
+    person("Tawab", "Safi", , "asaficontact@gmail.com", role = c("aut", "ctb"),
+           comment = c(ORCID = "0009-0000-5659-9890"))
+    )
 Description: An interface to easily run local language models with 'Ollama' <https://ollama.com> server
     and API endpoints (see <https://github.com/ollama/ollama/blob/main/docs/api.md> for details). It lets 
     you run open-source large language models locally on your machine. 
 License: MIT + file LICENSE
 Encoding: UTF-8
-RoxygenNote: 7.3.1
+RoxygenNote: 7.3.2
 Suggests: testthat (>= 3.0.0)
 Config/testthat/edition: 3
-Imports: glue, httr2, jsonlite, tibble
+Imports: base64enc, crayon, glue, httr2, jsonlite, tibble
 BugReports: https://github.com/hauselin/ollama-r/issues
 URL: https://hauselin.github.io/ollama-r/,
         https://github.com/hauselin/ollama-r
 NeedsCompilation: no
-Packaged: 2024-05-02 01:09:48 UTC; hause
-Author: Hause Lin [aut, cre, cph] (<https://orcid.org/0000-0003-4590-7039>)
+Packaged: 2024-08-17 14:28:06 UTC; hause
+Author: Hause Lin [aut, cre, cph] (<https://orcid.org/0000-0003-4590-7039>),
+  Tawab Safi [aut, ctb] (<https://orcid.org/0009-0000-5659-9890>)
 Maintainer: Hause Lin <hauselin@gmail.com>
 Repository: CRAN
-Date/Publication: 2024-05-02 15:12:40 UTC
+Date/Publication: 2024-08-17 15:50:02 UTC
