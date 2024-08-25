@@ -5,7 +5,10 @@
 
 <!-- badges: start -->
 
+[![CRAN
+status](https://www.r-pkg.org/badges/version/ollamar)](https://CRAN.R-project.org/package=ollamar)
 [![R-CMD-check](https://github.com/hauselin/ollama-r/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/hauselin/ollama-r/actions/workflows/R-CMD-check.yaml)
+[![CRAN_Download_Badge](https://cranlogs.r-pkg.org/badges/grand-total/ollamar)](https://cran.r-project.org/package=ollamar)
 <!-- badges: end -->
 
 The [Ollama R library](https://hauselin.github.io/ollama-r/) is the
@@ -25,6 +28,25 @@ for details)](https://github.com/ollama/ollama/blob/main/docs/api.md).
 
 > Note: You should have at least 8 GB of RAM available to run the 7B
 > models, 16 GB to run the 13B models, and 32 GB to run the 33B models.
+
+## Citing `ollamar`
+
+If you use this library, please cite [this
+paper](https://doi.org/10.31234/osf.io/zsrg5) using the following BibTeX
+entry:
+
+``` bibtex
+@article{Lin2024Aug,
+    author = {Lin, Hause and Safi, Tawab},
+    title = {{ollamar: An R package for running large language models}},
+    journal = {PsyArXiv},
+    year = {2024},
+    month = aug,
+    publisher = {OSF},
+    doi = {10.31234/osf.io/zsrg5},
+    url = {https://doi.org/10.31234/osf.io/zsrg5}
+}
+```
 
 ## Ollama R versus Ollama Python/JavaScript
 
@@ -51,13 +73,16 @@ Stable version:
 install.packages("ollamar")
 ```
 
-For the latest/development version with more features/bug fixes, you can
+For the latest/development version with more features/bug fixes (see
+latest changes
+[here](https://hauselin.github.io/ollama-r/news/index.html)), you can
 install it from GitHub using the `install_github` function from the
 `remotes` library. If it doesn’t work or you don’t have `remotes`
 library, please run `install.packages("remotes")` in R or RStudio before
 running the code below.
 
 ``` r
+# install.packages("remotes")  # run this line if you don't have the remotes library
 remotes::install_github("hauselin/ollamar")
 ```
 
@@ -139,19 +164,21 @@ resp_process(resp, "text")  # process the response to return text/vector output
 generate("llama3.1", "Tomorrow is a...", output = "text")  # directly return text/vector output
 generate("llama3.1", "Tomorrow is a...", stream = TRUE)  # return httr2 response object and stream output
 generate("llama3.1", "Tomorrow is a...", output = "df", stream = TRUE)
+
+# image prompt
+# use a vision/multi-modal model
+generate("benzie/llava-phi-3", "What is in the image?", images = "image.png", output = 'text')
 ```
 
 ### Chat
 
 Generate the next message in a chat (see [API
 doc](https://github.com/ollama/ollama/blob/main/docs/api.md#generate-a-chat-completion)).
-See the [Notes section](#notes) for utility/helper functions to help you
-format/prepare the messages for the functions/API calls.
+See the [Notes section](#notes) for details on how chat messages and
+chat history are represented/formatted.
 
 ``` r
-messages <- list(
-    list(role = "user", content = "Who is the prime minister of the uk?")
-)
+messages <- create_message("what is the capital of australia")  # default role is user
 resp <- chat("llama3.1", messages)  # default returns httr2 response object
 resp  # <httr2_response>
 resp_process(resp, "text")  # process the response to return text/vector output
@@ -163,27 +190,27 @@ chat("llama3.1", messages, output = "jsonlist")  # list
 chat("llama3.1", messages, output = "raw")  # raw string
 chat("llama3.1", messages, stream = TRUE)  # stream output and return httr2 response object
 
-# list of messages
-messages <- list(
-    list(role = "user", content = "Hello!"),
-    list(role = "assistant", content = "Hi! How are you?"),
-    list(role = "user", content = "Who is the prime minister of the uk?"),
-    list(role = "assistant", content = "Rishi Sunak"),
-    list(role = "user", content = "List all the previous messages.")
+# create chat history
+messages <- create_messages(
+  create_message("end all your sentences with !!!", role = "system"),
+  create_message("Hello!"),  # default role is user
+  create_message("Hi, how can I help you?!!!", role = "assistant"),
+  create_message("What is the capital of Australia?"),
+  create_message("Canberra!!!", role = "assistant"),
+  create_message("what is your name?")
 )
 cat(chat("llama3.1", messages, output = "text"))  # print the formatted output
+
+# image prompt
+messages <- create_message("What is in the image?", images = "image.png")
+# use a vision/multi-modal model
+chat("benzie/llava-phi-3", messages, output = "text")
 ```
 
 #### Streaming responses
 
 ``` r
-messages <- list(
-    list(role = "user", content = "Hello!"),
-    list(role = "assistant", content = "Hi! How are you?"),
-    list(role = "user", content = "Who is the prime minister of the uk?"),
-    list(role = "assistant", content = "Rishi Sunak"),
-    list(role = "user", content = "List all the previous messages.")
-)
+messages <- create_message("Tell me a 1-paragraph story.")
 
 # use "llama3.1" model, provide list of messages, return text/vector output, and stream the output
 chat("llama3.1", messages, output = "text", stream = TRUE)
@@ -276,10 +303,7 @@ text). The example below shows how the messages/lists are presented.
 ``` r
 list(  # main list containing all the messages
     list(role = "user", content = "Hello!"),  # first message as a list
-    list(role = "assistant", content = "Hi! How are you?"),  # second message as a list
-    list(role = "user", content = "Who is the prime minister of the uk?"),  # third message as a list
-    list(role = "assistant", content = "Rishi Sunak"),  # fourth message as a list
-    list(role = "user", content = "List all the previous messages.")  # fifth message as a list
+    list(role = "assistant", content = "Hi! How are you?")  # second message as a list
 )
 ```
 
@@ -287,7 +311,8 @@ To simplify the process of creating and managing messages, `ollamar`
 provides utility/helper functions to format and prepare messages for the
 `chat()` function.
 
-- `create_message()` creates the first message
+- `create_messages()`: create messages to build a chat history
+- `create_message()` creates a chat history with a single message
 - `append_message()` adds a new message to the end of the existing
   messages
 - `prepend_message()` adds a new message to the beginning of the
@@ -302,7 +327,7 @@ provides utility/helper functions to format and prepare messages for the
     (-2), 5 (-1)
 
 ``` r
-# create first message
+# create a chat history with one message
 messages <- create_message(content = "Hi! How are you? (1ST MESSAGE)", role = "assistant")
 # or simply, messages <- create_message("Hi! How are you?", "assistant")
 messages[[1]]  # get 1st message
@@ -328,6 +353,32 @@ messages[[4]]  # get 2nd message
 
 # delete a message at a specific index/position (2nd position in the example below)
 messages <- delete_message(messages, 2)
+
+# create a chat history with multiple messages
+messages <- create_messages(
+  create_message("You're a knowledgeable tour guide.", role = "system"),
+  create_message("What is the capital of Australia?")  # default role is user
+)
+```
+
+You can convert `data.frame`, `tibble` or `data.table` objects to
+`list()` of messages and vice versa with functions from base R or other
+popular libraries.
+
+``` r
+# create a list of messages 
+messages <- create_messages(
+  create_message("You're a knowledgeable tour guide.", role = "system"),
+  create_message("What is the capital of Australia?")  
+)
+
+# convert to dataframe
+df <- dplyr::bind_rows(messages)  # with dplyr library
+df <- data.table::rbindlist(messages)  # with data.table library
+
+# convert dataframe to list with apply, purrr functions
+apply(df, 1, as.list)  # convert each row to a list with base R apply
+purrr::transpose(df)  # with purrr library
 ```
 
 ## Advanced usage

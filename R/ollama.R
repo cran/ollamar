@@ -55,7 +55,7 @@ create_request <- function(endpoint, host = NULL) {
 #' Generate a response for a given prompt
 #'
 #' @param model A character string of the model name such as "llama3".
-#' @param prompt A character string of the promp like "The sky is..."
+#' @param prompt A character string of the prompt like "The sky is..."
 #' @param suffix A character string after the model response. Default is "".
 #' @param images A path to an image file to include in the prompt. Default is "".
 #' @param system A character string of the system prompt (overrides what is defined in the Modelfile). Default is "".
@@ -76,10 +76,16 @@ create_request <- function(endpoint, host = NULL) {
 #' [API documentation](https://github.com/ollama/ollama/blob/main/docs/api.md#generate-a-completion)
 #'
 #' @examplesIf test_connection()$status_code == 200
+#' # text prompt
 #' generate("llama3", "The sky is...", stream = FALSE, output = "df")
-#' generate("llama3", "The sky is...", stream = TRUE, output = "text")
+#' # stream and increase temperature
 #' generate("llama3", "The sky is...", stream = TRUE, output = "text", temperature = 2.0)
-#' generate("llama3", "The sky is...", stream = FALSE, output = "jsonlist")
+#'
+#' # image prompt
+#' # something like "image1.png"
+#' image_path <- file.path(system.file("extdata", package = "ollamar"), "image1.png")
+#' # use vision or multimodal model such as https://ollama.com/benzie/llava-phi-3
+#' generate("benzie/llava-phi-3:latest", "What is in the image?", images = image_path, output = "text")
 generate <- function(model, prompt, suffix = "", images = "", system = "", template = "", context = list(), stream = FALSE, raw = FALSE, keep_alive = "5m", output = c("resp", "jsonlist", "raw", "df", "text", "req"), endpoint = "/api/generate", host = NULL, ...) {
     output <- output[1]
     if (!output %in% c("df", "resp", "jsonlist", "raw", "text", "req")) {
@@ -90,7 +96,7 @@ generate <- function(model, prompt, suffix = "", images = "", system = "", templ
     req <- httr2::req_method(req, "POST")
 
     images_list <- list()
-    if (images != "") images_list <- list(image_encode_base64(images))
+    if (images[1] != "") images_list <- lapply(images, image_encode_base64)
 
     body_json <- list(
         model = model,
@@ -195,6 +201,13 @@ generate <- function(model, prompt, suffix = "", images = "", system = "", templ
 #'     list(role = "user", content = "List all the previous messages.")
 #' )
 #' chat("llama3", messages, stream = TRUE)
+#'
+#' # image
+#' image_path <- file.path(system.file("extdata", package = "ollamar"), "image1.png")
+#' messages <- list(
+#'    list(role = "user", content = "What is in the image?", images = image_path)
+#' )
+#' chat("benzie/llava-phi-3", messages, output = 'text')
 chat <- function(model, messages, tools = list(), stream = FALSE, keep_alive = "5m", output = c("resp", "jsonlist", "raw", "df", "text", "req"), endpoint = "/api/chat", host = NULL, ...) {
     output <- output[1]
     if (!output %in% c("df", "resp", "jsonlist", "raw", "text", "req")) {
@@ -203,6 +216,12 @@ chat <- function(model, messages, tools = list(), stream = FALSE, keep_alive = "
 
     req <- create_request(endpoint, host)
     req <- httr2::req_method(req, "POST")
+
+    if (!validate_messages(messages)) {
+        stop("Invalid messages.")
+    }
+
+    messages <- encode_images_in_messages(messages)
 
     body_json <- list(
         model = model,
@@ -531,7 +550,7 @@ delete <- function(name, endpoint = "/api/delete", host = NULL) {
 
 
 
-#' Pull/download a model from the Ollama library.
+#' Pull/download a model from the Ollama library
 #'
 #' See https://ollama.com/library for a list of available models. Use the list_models() function to get the list of models already downloaded/installed on your machine. Cancelled pulls are resumed from where they left off, and multiple calls will share the same download progress.
 #'

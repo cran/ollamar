@@ -40,4 +40,116 @@ test_that("copy function works with basic input", {
     expect_true(msg5[[1]]$role == "2" & msg5[[2]]$role == "2.1" & msg5[[3]]$role == "4")
     expect_true(msg5[[1]]$content == "hello2" & msg5[[2]]$content == "hello2.1" & msg5[[3]]$content == "hello4")
 
+
+    messages1 <- create_messages(
+        list(role = "system", content = "be nice"),
+        list(role = "user", content = "hello")
+    )
+    messages2 <- create_messages(
+        create_message("be nice", "system"),
+        create_message("hello")
+    )
+    messages3 <- create_message("be nice", "system")
+    messages3 <- append_message("hello", "user", messages3)
+    expect_identical(messages1, messages3)
+    expect_identical(messages1, messages2)
+    expect_identical(messages2, messages3)
+
+    msg1 <- create_message("be nice", "system")
+    msg2 <- create_message("hello", "user")
+    messages4 <- c(msg1, msg2)
+    expect_true(validate_messages(messages4))
+    expect_identical(messages4, messages1)
+
+    messages5 <- append(msg1, msg2)
+    expect_true(validate_messages(messages5))
+    expect_identical(messages5, messages1)
+    expect_identical(messages5, messages4)
+
+    expect_true(validate_message(list(role = "user", content = "hello")))
+    expect_true(validate_message(create_message('hello')))
+    expect_error(validate_message(create_message('hello', 1)))
+    expect_error(validate_message(create_message(2, 1)))
+    expect_error(validate_message(""))
+    expect_error(validate_message(list(role = "user")))
+    expect_error(validate_message(list(content = "hello")))
+    expect_error(validate_message(list(role = 1, content = "hello")))
+    expect_error(validate_message(list(role = "user", content = 1)))
+
+    expect_true(validate_messages(list(
+        list(role = "user", content = "hello")
+    )))
+    expect_true(validate_messages(list(
+        list(role = "system", content = "hello"),
+        list(role = "user", content = "hello")
+    )))
+    expect_false(validate_messages(list(
+        list(role = "system", content = "hello"),
+        list(role = "user", content = 1)
+    )))
+
+    expect_true(validate_messages(create_messages(
+        create_message(content = "hello")
+    )))
+    expect_true(validate_messages(create_messages(
+        create_message(role = "system", content = "hello"),
+        create_message(role = "user", content = "hello")
+    )))
+    expect_error(validate_messages(create_messages(
+        create_message(role = 2, content = "hello"),
+        create_message(role = "user", content = 1)
+    )))
+
+    images <- c(file.path(system.file("extdata", package = "ollamar"), "image1.png"),
+                file.path(system.file("extdata", package = "ollamar"), "image2.png"))
+
+    expect_type(encode_images_in_messages(list(
+        list(role = "user", content = "hello", images = images[1]),
+        list(role = "user", content = "hello"),
+        list(role = "user", content = "hello", images = "")
+    )), "list")
+
+    # test additional arguments ...
+    messages <- create_message("hello", images = c("image1", "image2"), abc = 4:5)
+    expect_true(length(messages) == 1)
+    expect_true(messages[[1]]$content == "hello")
+    expect_true(messages[[1]]$role == "user")
+    expect_true(names(messages[[1]])[1] == "role" &
+                    names(messages[[1]])[2] == "content" &
+                    names(messages[[1]])[3] == "images" &
+                    names(messages[[1]])[4] == "abc")
+
+    messages2 <- append_message("hello3", "3", messages, new_field = "NEW")
+    expect_true(length(messages2) == 2)
+    expect_true(messages2[[2]]$new_field == "NEW")
+
+    messages3 <- prepend_message("hello4", "4", messages2, new_prepended = "NEW_PRE")
+    expect_true(length(messages3) == 3)
+    expect_true(messages3[[1]]$new_prepended == "NEW_PRE")
+
+    messages4 <- insert_message("hello5", "5", messages3, 2, new_inserted = "NEW_INS")
+    expect_true(length(messages4) == 4)
+    expect_true(messages4[[2]]$new_inserted == "NEW_INS")
+
+
+
+
+    # # convert from list to data.frame
+    # messages1 <- create_messages(
+    #     list(role = "system", content = "be nice"),
+    #     list(role = "user", content = "hello"),
+    #     list(role = "assistant", content = "hi")
+    # )
+    # expect_true(nrow(dplyr::bind_rows(messages1)) == 3)
+    # expect_true(ncol(dplyr::bind_rows(messages1)) == 2)
+    # expect_true(nrow(data.table::rbindlist(messages1)) == 3)
+    # expect_true(ncol(data.table::rbindlist(messages1)) == 2)
+    #
+    # d0 <- data.table::rbindlist(messages1)
+    # # convert from data.frame to list
+    # expect_equal(apply(d0, 1, as.list), messages1)
+    # expect_equal(purrr::transpose(d0), messages1)
+    # expect_equal(lapply(1:nrow(d0), function(i) as.list(d0[i, ])), messages1)
+
+
 })

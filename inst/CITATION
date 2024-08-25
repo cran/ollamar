@@ -1,0 +1,23 @@
+citHeader("To cite ollamar in publications use:")
+
+bibentry(
+  bibtype    = "Article",
+  title    = "ollamar: An R package for running large language models",
+  author   = c(
+    person("Hause", "Lin", , "hauselin@gmail.com", role = c("aut", "cre", "cph"),
+           comment = c(ORCID = "0000-0003-4590-7039")),
+    person("Tawab", "Safi", , "asaficontact@gmail.com", role = c("aut", "ctb"),
+           comment = c(ORCID = "0009-0000-5659-9890"))
+    ),
+  journal  = "PsyArXiv",
+  year     = "2024",
+  month    = "aug",
+  publisher = "OSF",
+  doi      = "10.31234/osf.io/zsrg5",
+  url      = "https://doi.org/10.31234/osf.io/zsrg5",
+  textVersion = paste0(
+    "Lin, H., & Safi, T. (2024). ",
+    "ollamar: An R package for running large language models. ",
+    "PsyArXiv. https://doi.org/10.31234/osf.io/zsrg5"
+  )
+)

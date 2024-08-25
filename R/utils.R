@@ -376,10 +376,13 @@ image_encode_base64 <- function(image_path) {
 
 
 
+
+
 #' Create a message
 #'
 #' @param content The content of the message.
 #' @param role The role of the message. Can be "user", "system", "assistant". Default is "user".
+#' @param ... Additional arguments such as images.
 #'
 #' @return A list of messages.
 #' @export
@@ -388,8 +391,8 @@ image_encode_base64 <- function(image_path) {
 #' create_message("Hello", "user")
 #' create_message("Always respond nicely", "system")
 #' create_message("I am here to help", "assistant")
-create_message <- function(content, role = "user") {
-    message <- list(list(role = role, content = content))
+create_message <- function(content, role = "user", ...) {
+    message <- list(c(list(role = role, content = content), list(...)))
     return(message)
 }
 
@@ -402,6 +405,7 @@ create_message <- function(content, role = "user") {
 #' @param content  The content of the message.
 #' @param role The role of the message. Can be "user", "system", "assistant". Default is "user".
 #' @param x A list of messages. Default is NULL.
+#' @param ... Additional arguments such as images.
 #'
 #' @return A list of messages with the new message appended.
 #' @export
@@ -409,11 +413,11 @@ create_message <- function(content, role = "user") {
 #' @examples
 #' append_message("user", "Hello")
 #' append_message("system", "Always respond nicely")
-append_message <- function(content, role = "user", x = NULL) {
+append_message <- function(content, role = "user", x = NULL, ...) {
     if (is.null(x)) {
         x <- list()
     }
-    new_message <- list(role = role, content = content)
+    new_message <- c(list(role = role, content = content), list(...))
     x[[length(x) + 1]] <- new_message
     return(x)
 }
@@ -427,6 +431,7 @@ append_message <- function(content, role = "user", x = NULL) {
 #' @param content  The content of the message.
 #' @param role The role of the message. Can be "user", "system", "assistant".
 #' @param x A list of messages. Default is NULL.
+#' @param ... Additional arguments such as images.
 #'
 #' @return A list of messages with the new message prepended.
 #' @export
@@ -434,11 +439,11 @@ append_message <- function(content, role = "user", x = NULL) {
 #' @examples
 #' prepend_message("user", "Hello")
 #' prepend_message("system", "Always respond nicely")
-prepend_message <- function(content, role = "user", x = NULL) {
+prepend_message <- function(content, role = "user", x = NULL, ...) {
     if (is.null(x)) {
         x <- list()
     }
-    new_message <- list(role = role, content = content)
+    new_message <- c(list(role = role, content = content), list(...))
     x <- c(list(new_message), x) # Prepend by combining the new message with the existing list
     return(x)
 }
@@ -454,6 +459,7 @@ prepend_message <- function(content, role = "user", x = NULL) {
 #' @param role The role of the message. Can be "user", "system", "assistant". Default is "user".
 #' @param x A list of messages. Default is NULL.
 #' @param position The position at which to insert the new message. Default is -1 (end of list).
+#' @param ... Additional arguments such as images.
 #'
 #' @return A list of messages with the new message inserted at the specified position.
 #' @export
@@ -465,9 +471,9 @@ prepend_message <- function(content, role = "user", x = NULL) {
 #' )
 #' insert_message("INSERT MESSAGE AT THE END", "user", messages)
 #' insert_message("INSERT MESSAGE AT THE BEGINNING", "user", messages, 2)
-insert_message <- function(content, role = "user", x = NULL, position = -1) {
+insert_message <- function(content, role = "user", x = NULL, position = -1, ...) {
     if (position == -1) position <- length(x) + 1
-    new_message <- list(role = role, content = content)
+    new_message <- c(list(role = role, content = content), list(...))
     if (is.null(x)) {
         return(list(new_message))
     }
@@ -512,4 +518,162 @@ delete_message <- function(x, position = -1) {
     }
     if (position < 0) position <- length(x) + position + 1
     return(x[-position])
+}
+
+
+
+
+#' Validate a message
+#'
+#' Validate a message to ensure it has the required fields and the correct data types for the `chat()` function.
+#' @param message A list with a single message of list class.
+#'
+#' @return TRUE if message is valid, otherwise an error is thrown.
+#' @export
+#'
+#' @examples
+#' validate_message(create_message("Hello"))
+#' validate_message(list(role = "user", content = "Hello"))
+validate_message <- function(message) {
+
+    # if message is a list of messages, extract the first message
+    # likely created by create_message()
+    if (is.list(message) & all(c("role", "content") %in% names(message[[1]]))) {
+        message <- message[[1]]
+    }
+
+    if (!is.list(message)) {
+        stop("Message must be list.")
+    }
+    if (!all(c("role", "content") %in% names(message))) {
+        stop("Message must have role and content.")
+    }
+    if (!is.character(message$role)) {
+        stop("Message role must be character.")
+    }
+    if (!is.character(message$content)) {
+        stop("Message content must be character.")
+    }
+    return(TRUE)
+}
+
+
+
+
+
+
+
+#' Create a list of messages
+#'
+#' Create messages for `chat()` function.
+#'
+#' @param ... A list of messages, each of list class.
+#'
+#' @return A list of messages, each of list class.
+#' @export
+#'
+#' @examples
+#' messages <- create_messages(
+#'     create_message("be nice", "system"),
+#'     create_message("tell me a 3-word joke")
+#' )
+#'
+#' messages <- create_messages(
+#'     list(role = "system", content = "be nice"),
+#'     list(role = "user", content = "tell me a 3-word joke")
+#' )
+create_messages <- function(...) {
+    messages <- list(...)
+    for (i in 1:length(messages)) {
+        message <- messages[[i]]
+        # in case message is in a nested list created by create_message()
+        if (is.null(names(message))) {
+            if (validate_message(message[[1]])) {
+                message <- message[[1]]
+                messages[[i]] <- message
+            }
+        }
+        if (validate_message(message)) {
+            next
+        }
+    }
+    return(messages)
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+#' Validate a list of messages
+#'
+#' Validate a list of messages to ensure they have the required fields and the correct data types for the `chat()` function.
+#'
+#' @param messages A list of messages, each of list class.
+#'
+#' @return TRUE if all messages are valid, otherwise warning messages are printed and FALSE is returned.
+#' @export
+#'
+#' @examples
+#' validate_messages(create_messages(
+#'    create_message("Be friendly", "system"),
+#'    create_message("Hello")
+#' ))
+validate_messages <- function(messages) {
+    status <- TRUE
+    for (i in 1:length(messages)) {
+        tryCatch({
+            validate_message(messages[[i]])
+        }, error = function(e) {
+            status <<- FALSE
+            message(paste0("Message ", i, ": ", conditionMessage(e)))
+        })
+    }
+    return(status)
+}
+
+
+
+#' Encode images in messages to base64 format
+#'
+#' @param messages A list of messages, each of list class. Generally used in the `chat()` function.
+#'
+#' @return A list of messages with images encoded in base64 format.
+#' @export
+#'
+#' @examples
+#' image <- file.path(system.file("extdata", package = "ollamar"), "image1.png")
+#' message <- create_message(content = "what is in the image?", images = image)
+#' message_updated <- encode_images_in_messages(message)
+encode_images_in_messages <- function(messages) {
+    if (!validate_messages(messages)) {
+        stop("Invalid messages.")
+    }
+
+    for (i in 1:length(messages)) {
+        message <- messages[[i]]
+        if ("images" %in% names(message)) {
+            images <- message$images
+            if (images[1] != "") {
+                message$images <- lapply(images, image_encode_base64)
+                messages[[i]] <- message
+            } else {
+                next
+            }
+        }
+    }
+
+    # revalidate messages
+    if (!validate_messages(messages)) {
+        stop("Invalid messages.")
+    }
+
+    return(messages)
 }
