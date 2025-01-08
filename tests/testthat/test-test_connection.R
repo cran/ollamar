@@ -2,14 +2,9 @@ library(testthat)
 library(ollamar)
 
 test_that("test_connection function works", {
-    skip_if_not(test_connection()$status_code == 200, "Ollama server not available")
+    skip_if_not(test_connection(logical = TRUE), "Ollama server not available")
 
-    result <- test_connection()
-    expect_s3_class(result, "httr2_response")
-    expect_equal(result$status_code, 200)
-
-    # wrong url
-    result <- test_connection(url = "dsfdsf")
-    expect_s3_class(result, "httr2_request")
-    expect_equal(result$status_code, 503)
+    expect_equal(test_connection()$status_code, 200)
+    expect_equal(test_connection(logical = TRUE), TRUE)
+    expect_equal(test_connection(url = "dsfdsf")$status_code, 503)
 })

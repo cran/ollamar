@@ -9,8 +9,9 @@ chat(
   messages,
   tools = list(),
   stream = FALSE,
+  format = list(),
   keep_alive = "5m",
-  output = c("resp", "jsonlist", "raw", "df", "text", "req"),
+  output = c("resp", "jsonlist", "raw", "df", "text", "req", "tools", "structured"),
   endpoint = "/api/chat",
   host = NULL,
   ...
@@ -25,9 +26,11 @@ chat(
 
 \item{stream}{Enable response streaming. Default is FALSE.}
 
+\item{format}{Format to return a response in. Format can be json/list (structured response).}
+
 \item{keep_alive}{The duration to keep the connection alive. Default is "5m".}
 
-\item{output}{The output format. Default is "resp". Other options are "jsonlist", "raw", "df", "text", "req" (httr2_request object).}
+\item{output}{The output format. Default is "resp". Other options are "jsonlist", "raw", "df", "text", "req" (httr2_request object), "tools" (tool calling), "structured" (structured output)}
 
 \item{endpoint}{The endpoint to chat with the model. Default is "/api/chat".}
 
@@ -42,7 +45,7 @@ A response in the format specified in the output parameter.
 Generate a chat completion with message history
 }
 \examples{
-\dontshow{if (test_connection()$status_code == 200) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
+\dontshow{if (test_connection(logical = TRUE)) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
 # one message
 messages <- list(
     list(role = "user", content = "How are you doing?")

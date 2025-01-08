@@ -1,3 +1,10 @@
+# ollamar 1.2.2
+
+- `generate()` and `chat()` support [structured output](https://ollama.com/blog/structured-outputs) via `format` parameter.
+- `test_connection()` returns `httr2::response` object by default, but also support returning a logical value. #29
+- `chat()` supports [tool calling](https://ollama.com/blog/tool-support) via `tools` parameter. Added `get_tool_calls()` helper function to process tools. #30
+- Simplify README and add Get started vignette with more examples.
+
 # ollamar 1.2.1
 
 - `generate()` and `chat()` accept multiple images as prompts/messages.
@@ -22,8 +29,8 @@
 
 ## Bug fixes
 
-- Fixed invalid URLs. 
-- Updated title and description. 
+- Fixed invalid URLs.
+- Updated title and description.
 
 # ollamar 1.0.0
 
@@ -31,8 +38,8 @@
 
 ## New features
 
-- Integrate R with Ollama to run language models locally on your own machine. 
-- Include `test_connection()` function to test connection to Ollama server.
+- Integrate R with Ollama to run language models locally on your own machine.
+- Include `test_connection(logical = TRUE)` function to test connection to Ollama server.
 - Include `list_models()` function to list available models.
 - Include `pull()` function to pull a model from Ollama server.
 - Include `delete()` function to delete a model from Ollama server.

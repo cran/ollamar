@@ -14,14 +14,14 @@ library(tibble)
 library(jsonlite)
 
 load_all()  # loads working/development version of library (different from `library(ollamar)`)
-test_connection()
+test_connection()$status_code
 
 devtools::build_readme()  # knit README.me
 devtools::document()  # generate documentation
 usethis::use_github_links() # use github links in DESCRIPTION
-urlchecker::url_check()  # check if all urls work
 options(cli.ignore_unknown_rstudio_theme = TRUE)
 pkgdown::build_site()  # build the website (can take a bit of time)
+urlchecker::url_check()  # check if all urls work
 
 # main check
 devtools::check()  # NOTE: MUST fix all bugs/errors/notes/warnings!!!
@@ -30,15 +30,17 @@ devtools::check()  # NOTE: MUST fix all bugs/errors/notes/warnings!!!
 
 
 # before releasing to CRAN
-usethis::use_release_issue()
-usethis::use_version('patch')
+usethis::use_release_issue()  # make github issue
+usethis::use_version('patch')  # bump version number
 devtools::check(remote = TRUE, manual = TRUE)  # extensive check and build pdf manuals
-revdepcheck::revdep_reset()
+revdepcheck::revdep_reset()  # reset reverse dependencies
 revdepcheck::revdep_check(num_workers = 4)  # check reverse dependencies
-devtools::check_win_devel() # check on windows devel
+devtools::check_win_devel() # check on windows devel (wait 15-30 mins for email response)
+devtools::submit_cran()  # submit to CRAN
 
 
-# after acceptance
+
+# after CRAN acceptance
 usethis::use_dev_version(push = TRUE)  # bump version number to development
 usethis::use_github_release()  # create a release on github
 
@@ -48,7 +50,7 @@ usethis::use_github_release()  # create a release on github
 if (FALSE) {
 
     library(ggplot2)
-    d <- cranlogs::cran_downloads(from = "2024-01-01", to = "2024-08-24", packages = c("ollamar", "rollama"))
+    d <- cranlogs::cran_downloads(from = "2024-01-01", to = "2024-12-31", packages = c("ollamar", "rollama"))
     data.table::setDT(d)
     d <- d[ , cumsum := cumsum(count), by = package]
     d2 <- data.table::dcast(d, date ~ package, value.var = "count")

@@ -9,13 +9,14 @@ generate(
   prompt,
   suffix = "",
   images = "",
+  format = list(),
   system = "",
   template = "",
   context = list(),
   stream = FALSE,
   raw = FALSE,
   keep_alive = "5m",
-  output = c("resp", "jsonlist", "raw", "df", "text", "req"),
+  output = c("resp", "jsonlist", "raw", "df", "text", "req", "structured"),
   endpoint = "/api/generate",
   host = NULL,
   ...
@@ -29,6 +30,8 @@ generate(
 \item{suffix}{A character string after the model response. Default is "".}
 
 \item{images}{A path to an image file to include in the prompt. Default is "".}
+
+\item{format}{Format to return a response in. Format can be json/list (structured response).}
 
 \item{system}{A character string of the system prompt (overrides what is defined in the Modelfile). Default is "".}
 
@@ -57,7 +60,7 @@ A response in the format specified in the output parameter.
 Generate a response for a given prompt
 }
 \examples{
-\dontshow{if (test_connection()$status_code == 200) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
+\dontshow{if (test_connection(logical = TRUE)) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
 # text prompt
 generate("llama3", "The sky is...", stream = FALSE, output = "df")
 # stream and increase temperature

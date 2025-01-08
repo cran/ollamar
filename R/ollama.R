@@ -58,6 +58,7 @@ create_request <- function(endpoint, host = NULL) {
 #' @param prompt A character string of the prompt like "The sky is..."
 #' @param suffix A character string after the model response. Default is "".
 #' @param images A path to an image file to include in the prompt. Default is "".
+#' @param format Format to return a response in. Format can be json/list (structured response).
 #' @param system A character string of the system prompt (overrides what is defined in the Modelfile). Default is "".
 #' @param template A character string of the prompt template (overrides what is defined in the Modelfile). Default is "".
 #' @param context A list of context from a previous response to include previous conversation in the prompt. Default is an empty list.
@@ -75,7 +76,7 @@ create_request <- function(endpoint, host = NULL) {
 #' @references
 #' [API documentation](https://github.com/ollama/ollama/blob/main/docs/api.md#generate-a-completion)
 #'
-#' @examplesIf test_connection()$status_code == 200
+#' @examplesIf test_connection(logical = TRUE)
 #' # text prompt
 #' generate("llama3", "The sky is...", stream = FALSE, output = "df")
 #' # stream and increase temperature
@@ -86,10 +87,10 @@ create_request <- function(endpoint, host = NULL) {
 #' image_path <- file.path(system.file("extdata", package = "ollamar"), "image1.png")
 #' # use vision or multimodal model such as https://ollama.com/benzie/llava-phi-3
 #' generate("benzie/llava-phi-3:latest", "What is in the image?", images = image_path, output = "text")
-generate <- function(model, prompt, suffix = "", images = "", system = "", template = "", context = list(), stream = FALSE, raw = FALSE, keep_alive = "5m", output = c("resp", "jsonlist", "raw", "df", "text", "req"), endpoint = "/api/generate", host = NULL, ...) {
+generate <- function(model, prompt, suffix = "", images = "", format = list(), system = "", template = "", context = list(), stream = FALSE, raw = FALSE, keep_alive = "5m", output = c("resp", "jsonlist", "raw", "df", "text", "req", "structured"), endpoint = "/api/generate", host = NULL, ...) {
     output <- output[1]
-    if (!output %in% c("df", "resp", "jsonlist", "raw", "text", "req")) {
-        stop("Invalid output format specified. Supported formats: 'df', 'resp', 'jsonlist', 'raw', 'text', 'req'")
+    if (!output %in% c("df", "resp", "jsonlist", "raw", "text", "req", "structured")) {
+        stop("Invalid output format specified. Supported formats: 'df', 'resp', 'jsonlist', 'raw', 'text', 'req', 'structured'")
     }
 
     req <- create_request(endpoint, host)
@@ -111,6 +112,10 @@ generate <- function(model, prompt, suffix = "", images = "", system = "", templ
         stream = stream,
         keep_alive = keep_alive
     )
+
+    if (length(format) != 0 & inherits(format, "list")) {
+        body_json$format <- format
+    }
 
     # check if model options are passed and specified correctly
     opts <- list(...)
@@ -169,8 +174,9 @@ generate <- function(model, prompt, suffix = "", images = "", system = "", templ
 #' @param messages A list with list of messages for the model (see examples below).
 #' @param tools Tools for the model to use if supported. Requires stream = FALSE. Default is an empty list.
 #' @param stream Enable response streaming. Default is FALSE.
+#' @param format Format to return a response in. Format can be json/list (structured response).
 #' @param keep_alive The duration to keep the connection alive. Default is "5m".
-#' @param output The output format. Default is "resp". Other options are "jsonlist", "raw", "df", "text", "req" (httr2_request object).
+#' @param output The output format. Default is "resp". Other options are "jsonlist", "raw", "df", "text", "req" (httr2_request object), "tools" (tool calling), "structured" (structured output)
 #' @param endpoint The endpoint to chat with the model. Default is "/api/chat".
 #' @param host The base URL to use. Default is NULL, which uses Ollama's default base URL.
 #' @param ... Additional options to pass to the model.
@@ -181,7 +187,7 @@ generate <- function(model, prompt, suffix = "", images = "", system = "", templ
 #' @return A response in the format specified in the output parameter.
 #' @export
 #'
-#' @examplesIf test_connection()$status_code == 200
+#' @examplesIf test_connection(logical = TRUE)
 #' # one message
 #' messages <- list(
 #'     list(role = "user", content = "How are you doing?")
@@ -208,10 +214,10 @@ generate <- function(model, prompt, suffix = "", images = "", system = "", templ
 #'    list(role = "user", content = "What is in the image?", images = image_path)
 #' )
 #' chat("benzie/llava-phi-3", messages, output = 'text')
-chat <- function(model, messages, tools = list(), stream = FALSE, keep_alive = "5m", output = c("resp", "jsonlist", "raw", "df", "text", "req"), endpoint = "/api/chat", host = NULL, ...) {
+chat <- function(model, messages, tools = list(), stream = FALSE, format = list(), keep_alive = "5m", output = c("resp", "jsonlist", "raw", "df", "text", "req", "tools", "structured"), endpoint = "/api/chat", host = NULL, ...) {
     output <- output[1]
-    if (!output %in% c("df", "resp", "jsonlist", "raw", "text", "req")) {
-        stop("Invalid output format specified. Supported formats: 'df', 'resp', 'jsonlist', 'raw', 'text'")
+    if (!output %in% c("df", "resp", "jsonlist", "raw", "text", "req", "tools", "structured")) {
+        stop("Invalid output format specified. Supported formats: 'df', 'resp', 'jsonlist', 'raw', 'text', 'tools', 'structured'")
     }
 
     req <- create_request(endpoint, host)
@@ -230,6 +236,10 @@ chat <- function(model, messages, tools = list(), stream = FALSE, keep_alive = "
         stream = stream,
         keep_alive = keep_alive
     )
+
+    if (length(format) != 0 & inherits(format, "list")) {
+        body_json$format <- format
+    }
 
     opts <- list(...)
     if (length(opts) > 0) {
@@ -296,7 +306,7 @@ chat <- function(model, messages, tools = list(), stream = FALSE, keep_alive = "
 #' @return A response in the format specified in the output parameter.
 #' @export
 #'
-#' @examplesIf test_connection()$status_code == 200
+#' @examplesIf test_connection(logical = TRUE)
 #' create("mario", "FROM llama3\nSYSTEM You are mario from Super Mario Bros.")
 #' generate("mario", "who are you?", output = "text")  # model should say it's Mario
 #' delete("mario")  # delete the model created above
@@ -378,7 +388,7 @@ create <- function(name, modelfile = NULL, stream = FALSE, path = NULL, endpoint
 #' @return A response in the format specified in the output parameter.
 #' @export
 #'
-#' @examplesIf test_connection()$status_code == 200
+#' @examplesIf test_connection(logical = TRUE)
 #' list_models() # returns dataframe
 #' list_models("df") # returns dataframe
 #' list_models("resp") # httr2 response object
@@ -425,7 +435,7 @@ list_models <- function(output = c("df", "resp", "jsonlist", "raw", "text"), end
 #' @return A response in the format specified in the output parameter.
 #' @export
 #'
-#' @examplesIf test_connection()$status_code == 200
+#' @examplesIf test_connection(logical = TRUE)
 #' # show("llama3") # returns jsonlist
 #' show("llama3", output = "resp") # returns response object
 show <- function(name, verbose = FALSE, output = c("jsonlist", "resp", "raw"), endpoint = "/api/show", host = NULL) {
@@ -472,7 +482,7 @@ show <- function(name, verbose = FALSE, output = c("jsonlist", "resp", "raw"), e
 #' @return A httr2 response object.
 #' @export
 #'
-#' @examplesIf test_connection()$status_code == 200
+#' @examplesIf test_connection(logical = TRUE)
 #' copy("llama3", "llama3_copy")
 #' delete("llama3_copy")  # delete the model was just got copied
 copy <- function(source, destination, endpoint = "/api/copy", host = NULL) {
@@ -566,7 +576,7 @@ delete <- function(name, endpoint = "/api/delete", host = NULL) {
 #' @return A httr2 response object.
 #' @export
 #'
-#' @examplesIf test_connection()$status_code == 200
+#' @examplesIf test_connection(logical = TRUE)
 #' pull("llama3")
 #' pull("all-minilm", stream = FALSE)
 pull <- function(name, stream = FALSE, insecure = FALSE, endpoint = "/api/pull", host = NULL) {
@@ -634,7 +644,7 @@ pull <- function(name, stream = FALSE, insecure = FALSE, endpoint = "/api/pull",
 #' @return A httr2 response object.
 #' @export
 #'
-#' @examplesIf test_connection()$status_code == 200
+#' @examplesIf test_connection(logical = TRUE)
 #' push("mattw/pygmalion:latest")
 push <- function(name, insecure = FALSE, stream = FALSE, output = c("resp", "jsonlist", "raw", "text", "df"), endpoint = "/api/push", host = NULL) {
 
@@ -734,7 +744,7 @@ normalize <- function(x) {
 #' @return A numeric matrix of the embedding. Each column is the embedding for one input.
 #' @export
 #'
-#' @examplesIf test_connection()$status_code == 200
+#' @examplesIf test_connection(logical = TRUE)
 #' embed("nomic-embed-text:latest", "The quick brown fox jumps over the lazy dog.")
 #' # pass multiple inputs
 #' embed("nomic-embed-text:latest", c("Good bye", "Bye", "See you."))
@@ -806,7 +816,7 @@ embed <- function(model, input, truncate = TRUE, normalize = TRUE, keep_alive = 
 #' @return A numeric vector of the embedding.
 #' @export
 #'
-#' @examplesIf test_connection()$status_code == 200
+#' @examplesIf test_connection(logical = TRUE)
 #' embeddings("nomic-embed-text:latest", "The quick brown fox jumps over the lazy dog.")
 #' # pass model options to the model
 #' embeddings("nomic-embed-text:latest", "Hello!", temperature = 0.1, num_predict = 3)
@@ -859,7 +869,7 @@ embeddings <- function(model, prompt, normalize = TRUE, keep_alive = "5m", endpo
 #' @return A response in the format specified in the output parameter.
 #' @export
 #'
-#' @examplesIf test_connection()$status_code == 200
+#' @examplesIf test_connection(logical = TRUE)
 #' ps("text")
 ps <- function(output = c("df", "resp", "jsonlist", "raw", "text"), endpoint = "/api/ps", host = NULL) {
     output <- output[1]
@@ -905,7 +915,7 @@ ps <- function(output = c("df", "resp", "jsonlist", "raw", "text"), endpoint = "
 #' @return Does not return anything. It prints the conversation in the console.
 #' @export
 #'
-#' @examplesIf test_connection()$status_code == 200
+#' @examplesIf test_connection(logical = TRUE)
 #' ohelp(first_prompt = "quit")
 #' # regular usage: ohelp()
 ohelp <- function(model = "codegemma:7b", ...) {
@@ -954,7 +964,7 @@ ohelp <- function(model = "codegemma:7b", ...) {
 #' @return A logical value indicating if the model exists.
 #' @export
 #'
-#' @examplesIf test_connection()$status_code == 200
+#' @examplesIf test_connection(logical = TRUE)
 #' model_avail("codegemma:7b")
 #' model_avail("abc")
 #' model_avail("llama3")

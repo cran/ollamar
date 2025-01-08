@@ -1,30 +1,39 @@
 #' Test connection to Ollama server
 #'
 #' @description
-#' `test_connection()` tests whether the Ollama server is running or not.
+#' Tests whether the Ollama server is running or not.
 #'
 #' @param url The URL of the Ollama server. Default is http://localhost:11434
+#' @param logical Logical. If TRUE, returns a boolean value. Default is FALSE.
 #'
-#' @return A httr2 response object.
+#' @return Boolean value or httr2 response object, where status_code is either 200 (success) or 503 (error).
 #' @export
 #'
 #' @examples
-#' test_connection()
+#' test_connection(logical = TRUE)
 #' test_connection("http://localhost:11434") # default url
 #' test_connection("http://127.0.0.1:11434")
-test_connection <- function(url = "http://localhost:11434") {
+test_connection <- function(url = "http://localhost:11434", logical = FALSE) {
     req <- httr2::request(url)
     req <- httr2::req_method(req, "GET")
+
     tryCatch(
         {
             resp <- httr2::req_perform(req)
             message("Ollama local server running")
-            return(resp)
+            if (logical) {
+                return(TRUE)
+            } else {
+                return(resp)
+            }
         },
         error = function(e) {
             message("Ollama local server not running or wrong server.\nDownload and launch Ollama app to run the server. Visit https://ollama.com or https://github.com/ollama/ollama")
-            req$status_code <- 503
-            return(req)
+            if (logical) {
+                return(FALSE)
+            } else {
+                return(httr2::response(status_code = 503, url = url))
+            }
         }
     )
 }
@@ -73,22 +82,58 @@ stream_handler <- function(x, env, endpoint) {
 
 
 
+
+
+#' Get tool calls helper function
+#'
+#' Get tool calls from response object.
+#'
+#' @keywords internal
+get_tool_calls <- function(resp) {
+    body <- httr2::resp_body_json(resp)
+    tools <- list()
+    tools_called <- c()
+    tools_list <- c()
+    if (!is.null(body$message)) {
+        if (!is.null(body$message$tool_calls)) {
+            tools <- body$message$tool_calls
+            tools_list <- list()
+            if (length(tools) > 0) {
+                for (i in seq_along(tools)) {
+                    func <- tools[[i]]$`function`
+                    func_name <- func$name
+                    tools_list[[i]] <- func
+                    tools_called <- c(tools_called, func_name)
+                }
+            }
+            tools_called <- unique(tools_called)
+            message(paste0("Tools called: ", paste0(tools_called, collapse = ", ")))
+        }
+    }
+
+    return(tools_list)
+}
+
+
+
+
+
 #' Process httr2 response object
 #'
 #' @param resp A httr2 response object.
-#' @param output The output format. Default is "df". Other options are "jsonlist", "raw", "resp" (httr2 response object), "text"
+#' @param output The output format. Default is "df". Other options are "jsonlist", "raw", "resp" (httr2 response object), "text", "tools" (tool_calls), "structured" (structured output).
 #'
 #' @return A data frame, json list, raw or httr2 response object.
 #' @export
 #'
-#' @examplesIf test_connection()$status_code == 200
+#' @examplesIf test_connection(logical = TRUE)
 #' resp <- list_models("resp")
 #' resp_process(resp, "df") # parse response to dataframe/tibble
 #' resp_process(resp, "jsonlist") # parse response to list
 #' resp_process(resp, "raw") # parse response to raw string
-#' resp_process(resp, "resp") # return input response object
 #' resp_process(resp, "text") # return text/character vector
-resp_process <- function(resp, output = c("df", "jsonlist", "raw", "resp", "text")) {
+#' resp_process(resp, "tools") # return tool_calls
+resp_process <- function(resp, output = c("df", "jsonlist", "raw", "resp", "text", "tools")) {
 
     if (!inherits(resp, "httr2_response")) {
         stop("Input must be a httr2 response object")
@@ -109,6 +154,10 @@ resp_process <- function(resp, output = c("df", "jsonlist", "raw", "resp", "text
     output <- output[1]
     if (output == "resp") {
         return(resp)
+    }
+
+    if (output == "tools") {
+        return(get_tool_calls(resp))
     }
 
     # process stream resp separately
@@ -154,6 +203,8 @@ resp_process <- function(resp, output = c("df", "jsonlist", "raw", "resp", "text
             return(df_response)
         } else if (output == "text") {
             return(df_response$response)
+        } else if (output == "structured") {
+            return(jsonlite::fromJSON(df_response$response))
         }
     } else if (grepl("api/chat", resp$url)) { # process chat endpoint
         json_body <- httr2::resp_body_json(resp)
@@ -168,6 +219,8 @@ resp_process <- function(resp, output = c("df", "jsonlist", "raw", "resp", "text
             return(df_response)
         } else if (output == "text") {
             return(df_response$content)
+        } else if (output == "structured") {
+            return(jsonlite::fromJSON(df_response$content))
         }
     } else if (grepl("api/tags", resp$url)) { # process tags endpoint
         json_body <- httr2::resp_body_json(resp)[[1]]
